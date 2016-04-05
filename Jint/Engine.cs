@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Jint.Native;
 using Jint.Native.Argument;
 using Jint.Native.Array;
@@ -275,10 +276,26 @@ namespace Jint
             return Execute(parser.Parse(source));
         }
 
+        public Engine Execute(string source, CancellationToken cancellationToken)
+        {
+            using (new CancellationScope(cancellationToken))
+            {
+                return Execute(source);
+            }
+        }
+
         public Engine Execute(string source, ParserOptions parserOptions)
         {
             var parser = new JavaScriptParser();
             return Execute(parser.Parse(source, parserOptions));
+        }
+
+        public Engine Execute(string source, ParserOptions parserOptions, CancellationToken cancellationToken)
+        {
+            using (new CancellationScope(cancellationToken))
+            {
+                return Execute(source, parserOptions);
+            }
         }
 
         public Engine Execute(Program program)
@@ -305,6 +322,14 @@ namespace Jint
             }
 
             return this;
+        }
+
+        public Engine Execute(Program program, CancellationToken cancellationToken)
+        {
+            using (new CancellationScope(cancellationToken))
+            {
+                return Execute(program);
+            }
         }
 
         private void ResetLastStatement()

@@ -44,6 +44,7 @@
     <AssemblyOriginatorKeyFile>Jint.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CancellationScope.cs" />
     <Compile Include="DeclarationBindingType.cs" />
     <Compile Include="EvalCodeScope.cs" />
     <Compile Include="Engine.cs" />

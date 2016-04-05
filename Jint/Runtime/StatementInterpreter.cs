@@ -19,16 +19,19 @@ namespace Jint.Runtime
 
         private Completion ExecuteStatement(Statement statement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             return _engine.ExecuteStatement(statement);
         }
 
         public Completion ExecuteEmptyStatement(EmptyStatement emptyStatement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             return new Completion(Completion.Normal, null, null);
         }
 
         public Completion ExecuteExpressionStatement(ExpressionStatement expressionStatement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             var exprRef = _engine.EvaluateExpression(expressionStatement.Expression);
             return new Completion(Completion.Normal, _engine.GetValue(exprRef), null);
         }
@@ -113,6 +116,8 @@ namespace Jint.Runtime
             JsValue v = Undefined.Instance; 
             while (true)
             {
+                CancellationScope.ThrowIfCancellationRequested();
+
                 var exprRef = _engine.EvaluateExpression(whileStatement.Test);
 
                 if (!TypeConverter.ToBoolean(_engine.GetValue(exprRef)))
@@ -165,6 +170,8 @@ namespace Jint.Runtime
             JsValue v = Undefined.Instance;
             while (true)
             {
+                CancellationScope.ThrowIfCancellationRequested();
+
                 if (forStatement.Test != null)
                 {
                     var testExprRef = _engine.EvaluateExpression(forStatement.Test);
@@ -227,6 +234,8 @@ namespace Jint.Runtime
 
             while (cursor != null)
             {
+                CancellationScope.ThrowIfCancellationRequested();
+
                 var keys = cursor.GetOwnProperties().Select(x => x.Key).ToArray();
                 foreach (var p in keys)
                 {
@@ -282,6 +291,7 @@ namespace Jint.Runtime
         /// <returns></returns>
         public Completion ExecuteContinueStatement(ContinueStatement continueStatement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             return new Completion(Completion.Continue, null, continueStatement.Label != null ? continueStatement.Label.Name : null);
         }
 
@@ -292,6 +302,7 @@ namespace Jint.Runtime
         /// <returns></returns>
         public Completion ExecuteBreakStatement(BreakStatement breakStatement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             return new Completion(Completion.Break, null, breakStatement.Label != null ? breakStatement.Label.Name : null);
         }
 
@@ -302,6 +313,7 @@ namespace Jint.Runtime
         /// <returns></returns>
         public Completion ExecuteReturnStatement(ReturnStatement statement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             if (statement.Argument == null)
             {
                 return new Completion(Completion.Return, Undefined.Instance, null);
@@ -365,6 +377,8 @@ namespace Jint.Runtime
             bool hit = false;
             foreach (var clause in switchBlock)
             {
+                CancellationScope.ThrowIfCancellationRequested();
+
                 if (clause.Test == null)
                 {
                     defaultCase = clause;
@@ -502,6 +516,8 @@ namespace Jint.Runtime
         {
             foreach (var declaration in statement.Declarations)
             {
+                CancellationScope.ThrowIfCancellationRequested();
+
                 if (declaration.Init != null)
                 {
                     var lhs = _engine.EvaluateExpression(declaration.Id) as Reference;
@@ -528,6 +544,7 @@ namespace Jint.Runtime
 
         public Completion ExecuteBlockStatement(BlockStatement blockStatement)
         {
+            CancellationScope.ThrowIfCancellationRequested();
             return ExecuteStatementList(blockStatement.Body);
         }
 

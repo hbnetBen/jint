@@ -1676,5 +1676,239 @@ namespace Jint.Tests.Runtime
                 assert('4.0' === match[2]);
             ");
         }
+
+        [Fact]
+        public void CancellationScopeIsNotCancelled()
+        {
+            var cts = new CancellationTokenSource();
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                engine.Execute("var foo = 'bar'; foo;");
+
+                var result = engine.GetValue("foo").ToObject();
+
+                Assert.Equal("bar", result);
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeIsCancelledShouldThrowOperationCancelled()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("var foo = 'bar'; foo;"));
+
+                var result = engine.GetValue("foo").ToObject();
+
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsWhileLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("while(true){ var i = 0; }"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsEmptyWhileLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("while(true){}"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsDoWhileLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("do { var i = 0; } while(true);"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsEmptyDoWhileLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("do { } while(true);"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsForLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("for(;;){ var i = 0; }"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsEmptyForLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine();
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("for(;;){}"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsForInLoop()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("for(var o in { '1' : '1' }){ sleep(300); }"));
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsTryStatement()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("try{ x = 1; sleep(250); x = 2; } catch(e){ } "));
+
+                //Assert 1 because it should cancel after the sleep, but before x = 2 is executed
+                Assert.Equal(1, engine.GetValue("x").AsNumber());
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsCatchStatement()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("try{ throw 'Test'; } catch(e){ x = 1; sleep(250); x = 2; } "));
+
+                //Assert 1 because it should cancel after the sleep, but before x = 2 is executed
+                Assert.Equal(1, engine.GetValue("x").AsNumber());
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsIfStatement()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute("if(true){ x = 1; sleep(250); x = 2; } "));
+
+                //Assert 1 because it should cancel after the sleep, but before x = 2 is executed
+                Assert.Equal(1, engine.GetValue("x").AsNumber());
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelsCaseStatement()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(200);
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                var js = @"switch(3){
+                               case 1:
+                               case 2:
+                               case 3:
+                                   x = 1;
+                                   sleep(250);
+                                   x = 2;
+                               case 4:
+                           }";
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute(js));
+
+                //Assert 1 because it should cancel after the sleep, but before x = 2 is executed
+                Assert.Equal(1, engine.GetValue("x").AsNumber());
+            }
+        }
+
+        [Fact]
+        public void CancellationScopeCancelDoesNotRunCaseStatement()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            using (new CancellationScope(cts.Token))
+            {
+                var engine = new Engine().SetValue("sleep", new Action<int>(Thread.Sleep));
+
+                var js = @"switch(3){
+                               case 1:
+                               case 2:
+                               case 3:
+                                   x = 1;
+                               case 4:
+                           }";
+
+                Assert.Throws<OperationCanceledException>(() => engine.Execute(js));
+                Assert.Null(engine.GetValue("x").ToObject());
+            }
+        }
     }
 }
